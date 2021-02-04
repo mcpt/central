@@ -45,9 +45,11 @@ func AddServer(serverType string, metadata map[string]string) (Server, error) {
 		return Server{}, errors.New("server type not found")
 	}
 
-	takenIPs := make([]net.IPAddr, len(servers))
-	for i, server := range servers {
-		takenIPs[i] = net.IPAddr{IP: server.IP.IP}
+	takenIPs := make([]net.IPAddr, 0)
+	for _, server := range servers {
+		if server.Type == serverType {
+			takenIPs = append(takenIPs, net.IPAddr{IP: server.IP.IP})
+		}
 	}
 
 	ip := AllocateIP(ipRange, takenIPs)
