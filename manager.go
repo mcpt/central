@@ -141,6 +141,7 @@ func DeleteServer(ip IPAddr) error {
 
 	err := wgClient.ConfigureDevice(config.Interface, wgtypes.Config{
 		Peers: newPeers,
+		ReplacePeers: true,
 	})
 
 	if err != nil {
