@@ -30,6 +30,11 @@ func AllocateIP(subnet net.IPNet, taken []net.IPAddr) net.IPAddr {
 	}
 }
 
+func Save() error {
+	out, _ := yaml.Marshal(servers)
+	return ioutil.WriteFile(os.Args[2], out, 0644)
+}
+
 func AddServer(serverType string, metadata map[string]string) (Server, error) {
 	var ipRange net.IPNet
 	var found bool
@@ -79,8 +84,8 @@ func AddServer(serverType string, metadata map[string]string) (Server, error) {
 
 	servers = append(servers, server)
 
-	out, _ := yaml.Marshal(servers)
-	err = ioutil.WriteFile(os.Args[2], out, 0644)
+	err = Save()
+
 	if err != nil {
 		return Server{}, err
 	}
@@ -104,4 +109,43 @@ func AddServer(serverType string, metadata map[string]string) (Server, error) {
 	}
 
 	return server, nil
+}
+
+func DeleteServer(ip IPAddr) error {
+	index := -1
+	for i, server := range servers {
+		if server.IP.String() == ip.String() {
+			index = i
+		}
+	}
+	if index == -1 {
+		return errors.New("server not found")
+	}
+
+	servers = append(servers[:index], servers[index+1:]...)
+	newPeers := make([]wgtypes.PeerConfig, len(servers))
+
+	for i := 0; i < len(servers); i++ {
+		key, _ := wgtypes.ParseKey(servers[i].PrivateKey)
+
+		newPeers[i] = wgtypes.PeerConfig{
+			PublicKey: key.PublicKey(),
+			AllowedIPs: []net.IPNet{
+				{
+					IP:   servers[i].IP.IP,
+					Mask: []byte{255, 255, 255, 255}, // = /32
+				},
+			},
+		}
+	}
+
+	err := wgClient.ConfigureDevice(config.Interface, wgtypes.Config{
+		Peers: newPeers,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return Save()
 }
