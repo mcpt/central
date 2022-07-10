@@ -1,9 +1,0 @@
-interface: wg0
-hubip: 10.11.10.1
-listen: 127.0.0.1:8080
-secret: ecdd4a92cda41933e7852148080591ddf71e5be8f8d5becd574b9cdc79157705
-types:
-  - name: site
-    cidr: 10.11.11.0/24
-  - name: judge
-    cidr: 10.11.12.0/24
